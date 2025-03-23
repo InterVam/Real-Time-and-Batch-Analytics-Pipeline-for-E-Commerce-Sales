@@ -1,0 +1,17 @@
+FROM confluentinc/cp-kafka:latest
+
+# Make it owned by root
+USER root
+# Create a directory for scripts
+RUN mkdir -p /opt/kafka-scripts
+WORKDIR /opt/kafka-scripts
+
+# Copy the topic creation script
+COPY create-kafka-topic.sh .
+
+
+# Make it executable
+RUN chmod +x create-kafka-topic.sh
+
+# Start Kafka, wait for it to be ready, then create the topic
+CMD ["bash", "-c", "/etc/confluent/docker/run & sleep 20 && /opt/kafka-scripts/create-kafka-topic.sh && tail -f /dev/null"]
