@@ -31,4 +31,4 @@ while True:
     transaction = generate_transaction()
     producer.send("sales_transactions", transaction)
     print(f"Sent: {transaction}")
-    time.sleep(random.uniform(0.5, 2.0))
+    time.sleep(0.1)
