@@ -1,93 +1,97 @@
-# 📊 Batch & Streaming Data Pipeline Project
+# 📊 Data Engineering Project: Real-Time Streaming Pipeline with Kafka & PySpark
 
-## 🚀 Overview
-This project demonstrates a full end-to-end data engineering pipeline featuring both real-time streaming data ingestion and batch data processing. The pipeline simulates e-commerce transactions and customer profile data to build a scalable analytics solution.
-
----
-
-## ✅ Architecture
-- **Streaming Ingestion**: Kafka simulates real-time sales transactions.
-- **Batch Ingestion**: Historical customer profile CSV stored locally (can be extended to S3 or Azure Blob).
-- **Processing Layer**:
-  - Spark Structured Streaming for real-time processing.
-  - PySpark batch jobs for historical data.
-- **Storage**: Simulated data lake via local directories or cloud integration.
-- **Orchestration**: Airflow (optional for scheduling batch jobs).
-- **Visualization**: Connect to Power BI or Looker for analytics (optional).
+## ✅ Overview
+This project demonstrates an end-to-end streaming data pipeline using:
+- **Kafka** for simulating real-time sales transactions.
+- **PySpark Structured Streaming** for processing, aggregating, and saving results.
+- **Local Parquet output** for batch analytics and future BI integration.
 
 ---
 
-## 📂 Folder Structure
+## ✅ Architecture Summary
+- **Kafka (via Docker)**: Receives simulated sales transactions.
+- **PySpark (Jupyter Notebook Docker)**: 
+  - Connects to Kafka.
+  - Consumes streaming data.
+  - Aggregates sales by product category.
+  - Saves results continuously as Parquet files.
+- **Output**: Local Parquet files in a `/streaming_sales_output/` directory with checkpoints for fault tolerance.
+
+---
+
+## ✅ Folder Structure
 ```
-├── Kafka
+project-root/
+├── Kafka/
 │   ├── docker-compose.yml
 │   ├── Dockerfile
 │   └── create-kafka-topic.sh
-│
-├── Python-Sales-Simulation-Script
-│   ├── generate_customer_profiles.py
-│   ├── sales_simulation_producer.py
-│   ├── customer_profiles.csv (generated)
-│   └── customer_ids.json (generated)
-│
-└── pyspark
-    ├── spark_batch_job.py (to be added)
-    └── spark_streaming_job.py (to be added)
+├── pyspark/
+│   ├── spark_streaming_job.py
+│   └── streaming_sales_output/ (generated)
+│       ├── part-*.parquet
+│       └── checkpoints/
+└── Python-Sales-Simulation-Script/
+    ├── sales_simulation_producer.py
+    ├── generate_customer_profiles.py
+    └── customer_profiles.csv
 ```
 
 ---
 
-## 🔧 Prerequisites
-- Docker & Docker Compose
-- Python 3.8+
-- Kafka (via Docker)
-- PySpark
-- pandas, faker, kafka-python (Python libraries)
+## ✅ How to Run the Pipeline
 
----
-
-## 🛠 Setup Instructions
-
-### 1. Kafka Setup
+### 1️⃣ Start Kafka & Zookeeper
 ```bash
 cd Kafka
-docker-compose up --build -d
+docker-compose up -d
 ```
 
-### 2. Generate Historical Customer Profiles
-```bash
-cd Python-Sales-Simulation-Script
-python generate_customer_profiles.py
-```
-This creates `customer_profiles.csv` and `customer_ids.json`.
-
-### 3. Start Sales Transaction Producer
-```bash
-python sales_simulation_producer.py
-```
-This will send random transactions to Kafka.
-
-### 4. (Optional) Consume messages for testing
+### 2️⃣ Verify Kafka topic
 ```bash
 docker exec -it <kafka_container_id> bash
-kafka-console-consumer --topic sales_transactions --bootstrap-server kafka:9092 --from-beginning
+kafka-topics --list --bootstrap-server localhost:9092
+```
+If the `sales_transactions` topic doesn’t exist, create it:
+```bash
+kafka-topics --create --topic sales_transactions --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+```
+
+### 3️⃣ Start PySpark Jupyter Notebook
+```bash
+docker run -it --rm \
+  -p 8888:8888 \
+  -v $(pwd)/pyspark:/home/jovyan/work \
+  --network data-pipeline-net \
+  jupyter/pyspark-notebook
+```
+
+### 4️⃣ Run the `spark_streaming_job.py` from the notebook or as a script
+- The script:
+  - Connects to Kafka.
+  - Aggregates sales transactions by product category in 1-minute windows.
+  - Writes output continuously to Parquet.
+
+### 5️⃣ Start the Kafka producer simulation
+```bash
+cd Python-Sales-Simulation-Script
+python sales_simulation_producer.py
+```
+
+### 6️⃣ Check Parquet output
+- Parquet files will appear in:
+```
+pyspark/streaming_sales_output/
 ```
 
 ---
 
-## 🔎 Next Steps (Coming Soon)
-- Add Spark streaming job to consume from Kafka and write Parquet outputs.
-- Add Spark batch ETL to transform `customer_profiles.csv`.
-- Connect Spark output to Snowflake or Databricks.
-- Visualize aggregated metrics in Power BI.
+## ✅ Next Steps
+- Add batch job processing for `customer_profiles.csv`.
+- Visualize aggregated Parquet results in a Jupyter notebook.
+- Optionally deploy on Azure Blob or Databricks.
 
 ---
 
-## 🤝 Contributions
-PRs are welcome! Feel free to fork the repo and add enhancements.
-
----
-
-## 📫 Contact
-Created by Youssef — [LinkedIn](https://www.linkedin.com/in/yfathi2000/) | [GitHub](https://github.com/InterVam)
-
+## ✅ Contact
+Made by Youssef — feel free to connect or reach out for questions!
